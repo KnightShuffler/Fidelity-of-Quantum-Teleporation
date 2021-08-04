@@ -1,0 +1,212 @@
+\documentclass[prx,twocolumn]{revtex4-2}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{braket}
+
+\usepackage{tikz}
+\usetikzlibrary{quantikz}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{float}
+
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+
+\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+\renewcommand{\thefigure}{\arabic{section}.\arabic{figure}}
+\renewcommand{\thetable}{\arabic{section}.\arabic{table}}
+
+\DeclareMathOperator{\CNOT}{CNOT}
+\DeclareMathOperator{\CZ}{CZ}
+
+\begin{document}
+%Title of paper
+\title{Implementing Quantum Teleportation on a Real Quantum Computer using Qiskit \\ Physics 707 Term Paper}
+\author{Swagat Kumar}
+\affiliation{University of Wisconsin-Madison}
+\date{\today}
+
+\begin{abstract}
+The quantum teleportation protocol allows two parties to transfer a qubit state from one qubit to another
+by sharing only classical information and a pair of qubits in an entangled state. In this paper, I will show 
+how to emulate the teleportation protocol to run on IBM's free to use quantum computers using their open source
+software development kit -- Qiskit. Lastly, I will use quantum state tomography to measure the fidelity of the 
+teleportation protocol on the \textit{ibmq\_5\_yorktown} system which is one of the IBM Quantum Canary processors.
+\end{abstract}
+
+\maketitle
+
+\section{The Quantum Teleportation Protocol}
+Alice and Bob each have one of two qubits that are in the Bell state 
+$\ket{\Psi}_{AB} = \frac{1}{\sqrt2}(\ket0_A\ket0_B + \ket1_A\ket1_B)$.
+Alice also has another qubit in the state $\ket\psi = \alpha\ket0+\beta\ket1$, the teleportation protocol allows
+her to transfer or \textit{teleport} her state $\ket\psi$ to Bob's qubit by making a measurement on both of 
+her qubits. \cite{nielsen-chuang,Qiskit-Textbook} Doing so does not violate the no-cloning theorem as the state 
+of Alice's qubit is collapses after measurement. The protocol is described using the quantum circuit in 
+Figure \ref{fig:teleportation-circuit}.
+
+\begin{figure}[h]
+    \centering
+    \begin{quantikz}[scale=1.5]
+        \lstick{$\ket\psi_C$} \qw & \ctrl{1} %\slice{$\ket{\psi_1}$} 
+        & \gate{H} %\slice{$\ket{\psi_2}$} 
+        & \meter{$c_0$} & \cw & \cw & \cwbend{2} \\
+        \lstick[wires=2]{$\ket\Psi_{AB}$} \qw & \targ{} & \qw & \meter{$c_1$} & \cw & \cwbend{1}\\
+                                          \qw & \qw     & \qw & \qw           & \qw & \gate{X^{c_1}} & \gate{Z^{c_0}} & \qw \rstick{$\ket\psi_B$}
+    \end{quantikz}
+    \caption{The circuit describing the quantum teleportation protocol.}
+    \label{fig:teleportation-circuit}
+\end{figure}
+
+The initial state of the system is 
+\begin{equation}
+    \begin{aligned}
+    \ket{\psi_0}    &= \ket\psi_C \otimes \ket\Psi_{AB} \\
+                    %&= (\alpha\ket0_C + \beta\ket1_C) \otimes \frac{\ket0_A\ket0_B + \ket1_A\ket1_B}{\sqrt2} \\
+                    &= \frac{\alpha}{\sqrt2} (\ket0_C\ket0_A\ket0_B + \ket0_C\ket1_A\ket1_B) \\
+                    &+ \frac{\beta}{\sqrt2} (\ket1_C\ket0_A\ket0_B + \ket1_C\ket1_A\ket1_B)
+    \end{aligned}
+\end{equation}
+After Alice applies a CNOT the state evolves to:
+\begin{equation}
+    \begin{aligned}
+    \ket{\psi_1}    &= \CNOT_{C,A} \ket{\psi_0} \\
+                    &= \frac{\alpha}{\sqrt2} (\ket0_C\ket0_A\ket0_B + \ket0_C\ket1_A\ket1_B) \\ 
+                    &+ \frac{\beta}{\sqrt2} (\ket1_C\ket1_A\ket0_B + \ket1_C\ket0_A\ket1_B)
+    \end{aligned} 
+\end{equation}
+And then after the Hadamard gate:
+\begin{equation}
+    \begin{aligned}
+    \ket{\psi_2}    &= H_C \ket{\psi_1} \\
+                    % &= \frac{\alpha}{2} (
+                    %     (\ket0_C + \ket1_C)\ket0_A\ket0_B + 
+                    %     (\ket0_C + \ket1_C)\ket1_A\ket1_B) \\
+                    % &+ \frac{\beta}{2} (
+                    %     (\ket0_C - \ket1_C)\ket1_A\ket0_B + 
+                    %     (\ket0_C - \ket1_C)\ket0_A\ket1_B) \\ \\
+                    &= \frac{1}{2}
+                        \begin{bmatrix}
+                        \quad \ket0_C\ket0_A (\alpha\ket0_B+\beta\ket1_B) \\
+                        +\ket0_C\ket1_A (\alpha\ket1_B+\beta\ket0_B) \\
+                        +\ket1_C\ket0_A (\alpha\ket0_B-\beta\ket1_B) \\
+                        +\ket1_C\ket1_A (\alpha\ket1_B-\beta\ket0_B)     
+                        \end{bmatrix} \\
+                    &= \frac{1}{2} 
+                    \begin{bmatrix}
+                        \ket0_C\ket0_A \otimes \ket\psi_B \\
+                        +\ket0_C\ket1_A \otimes X\ket\psi_B \\
+                        +\ket1_C\ket0_A \otimes Z\ket\psi_B \\ 
+                        \quad +\ket1_C\ket1_A \otimes XZ\ket\psi_B 
+                    \end{bmatrix}
+    \end{aligned}
+    \label{eq:psi-2}
+\end{equation}
+After applying these gates, Alice measures qubit $C$ to get a bit $c_0$ and measures qubit $A$ to get a bit 
+$c_1$. These measurements project Alice's qubits into one of the four 2-qubit standard basis states and
+simultaneously project's Bob's qubit into a state that is closely related to $\ket\psi$, as per Equation 
+\ref{eq:psi-2}. Alice sends the measured bits to Bob via a classical communication channel, which tells Bob 
+the corrective gates he needs to apply to transform his qubit into the state $\ket\psi$, given in Table 
+\ref{tab:corrective-gates}.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c||c|}
+        \hline 
+        $c_0$ & $c_1$ & Corrective Gate \\ \hline \hline 
+        0 & 0 & $I$ \\ \hline
+        0 & 1 & $X$ \\ \hline
+        1 & 0 & $Z$ \\ \hline
+        1 & 1 & $ZX$ \\ \hline
+    \end{tabular}
+    \caption{The corrective gates Bob needs to apply based on the bits he receives from Alice.}
+    \label{tab:corrective-gates}
+\end{table}
+
+\section{Teleportation on IBM's Quantum Computers}
+As of right now, IBM's quantum computers don't support classically controlled gates \cite{Qiskit-Textbook} 
+like the corrective gates that Bob needs to apply in the teleportation protocol. As a result, we can't
+directly implement the protocol on an IBM quantum computer because teleportation requires the classical 
+communication channel. However, it is possible to emulate the teleportation protocol via a quantum circuit 
+that does not have any classically controlled gates and is equivalent to the one in 
+Figure \ref{fig:teleportation-circuit}.
+\subsection{Principle of Deferred Measurement}
+The principle of deferred measurement states that measurements made in the middle of a quantum circuit can 
+always be shifted to the end of the circuit, where any classically controlled gates dependent on those 
+measurements are replaced by conditional quantum gates. \cite{nielsen-chuang}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.4\columnwidth}
+        \resizebox*{\textwidth}{!}{
+        \begin{quantikz}
+            \qw & \meter{} & \cwbend{1} \\
+            \qw & \qw      & \gate{U} & \qw
+        \end{quantikz}
+        }
+    \end{subfigure}
+    \begin{subfigure}[b]{0.4\columnwidth}
+        \resizebox*{\textwidth}{!}{
+        \begin{quantikz}
+            \qw & \ctrl{1} & \meter{} & \cw \\
+            \qw & \gate{U} & \qw      & \qw
+        \end{quantikz}
+        }
+    \end{subfigure}
+    \caption{The two circuits are equivalent as per the deferred measurement principle.}
+    \label{fig:deferred-measurement}
+\end{figure}
+
+Making use of this principle, we can construct the following quantum circuit that will emulate the 
+teleportation protocol.
+
+\begin{figure}[H]
+    \centering
+    \begin{quantikz}
+        \lstick{$\ket\psi_C$}             & \ctrl{1} & \gate{H} \slice{$\ket{\psi_2}$} & \qw      & \ctrl{2} \slice{$\ket{\psi_3}$} & \meter{$c_0$} & \cw \\
+        \lstick[wires=2]{$\ket\Psi_{AB}$} & \targ{}  & \qw      & \ctrl{1} & \qw      & \meter{$c_1$} & \cw \\
+                                          & \qw      & \qw      & \targ{1} & \gate{Z} & \qw           & \qw 
+    \end{quantikz}
+    \caption{The quantum circuit that will emulate the teleportation protocol on the IBM machine.}
+    \label{fig:emulated-circuit}
+\end{figure}
+
+From Equation \ref{eq:psi-2}, it's clear that after applying the CNOT and controlled-$Z$ gates, the 
+system will be in the state
+\begin{equation}
+    \resizebox{0.9\hsize}{!}{
+    $\begin{aligned}
+    \ket{\psi_3}    &= \CZ_{C,B} \CNOT_{A,B} \ket{\psi_2} \\
+                    &= \frac{\ket0_A\ket0_B + \ket0_A\ket1_B + \ket1_A\ket0_B + \ket1_A\ket1_B}{2}\otimes\ket\psi_C
+    \end{aligned}$
+    }
+\end{equation}
+
+And so, regardless of the measurement outcome, qubit $B$ will be in the state $\ket\psi$. 
+
+\section{Measuring the Teleportation Fidelity of IBM's Quantum Computer}
+Unlike the implementation on simulators, we won't have access to the state vector of Bob's qubit at the end 
+of running the protocol when we run it on an actual quantum computer. We can however, take multiple 
+measurements on different runs of the protocol attempting to reconstruct Bob's state.
+\subsection{Quantum State Tomography}
+\subsection{Fidelity Calculation}
+\subsection{Results}
+
+\nocite{ibm-quantum}
+
+\begin{acknowledgments}
+    I acknowledge the use of IBM Quantum services for this work. The views expressed are those of the author, 
+    and do not reflect the official policy or position of IBM or the IBM Quantum team.
+\end{acknowledgments}
+
+% Create the reference section using BibTeX:
+\bibliography{kumar-swagat-707-term-paper}
+
+\end{document}
+%
+% ****** End of file apstemplate.tex ******
