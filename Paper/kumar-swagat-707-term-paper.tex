@@ -23,6 +23,7 @@
 
 \DeclareMathOperator{\CNOT}{CNOT}
 \DeclareMathOperator{\CZ}{CZ}
+\DeclareMathOperator{\tr}{tr}
 
 \begin{document}
 %Title of paper
@@ -194,7 +195,75 @@ Unlike the implementation on simulators, we won't have access to the state vecto
 of running the protocol when we run it on an actual quantum computer. We can however, take multiple 
 measurements on different runs of the protocol attempting to reconstruct Bob's state.
 \subsection{Quantum State Tomography}
+``Quantum state tomography is the attempt to discover the quantum-mechanical state of a physical system, or
+more precisely, of a finite set of systems prepared by the same process.'' \cite{tomography}
+
+The state of a single qubit can be characterized with a $2\times 2$ density matrix
+\begin{equation}
+    \rho = \frac{1}{2} (I + \bar{x} X + \bar{y} Y + \bar{z} Z)
+\end{equation}
+where $X, Y$ and $Z$ are the Pauli matrices and 
+\begin{equation}
+    \begin{aligned}
+        \bar{x} &= \tr(X\rho), \\
+        \bar{y} &= \tr(Y\rho), \\
+        \bar{z} &= \tr(Z\rho),
+    \end{aligned}
+\end{equation}
+are the average values of the observables $X,Y$ and $Z$ respectively \cite{nielsen-chuang}.
+$\vec{r} = (\bar{x},\bar{y},\bar{z})$ is called the Bloch vector of $\rho$. 
+$\|\vec{r}\| \leq 1$, with equality holding only for pure states \cite{nielsen-chuang}.
+
+We can find an approximation of the Bloch vector for a state $\rho$ by instantiating $3N$ qubits in the state 
+$\rho$, measuring the observables $X, Y$ and $Z$ on $N$ instances each, and then taking the mean value of the 
+observations. We can use this procedure to tomographically reconstruct the state of Bob's qubit after the 
+teleportation protocol is finished.
+
+IBM's hardware only allows the measurement of $Z$, with measurement outcome 0 denoting the eigenvalue $+1$ 
+and 1 denoting the eigenvalue $-1$. The following circuits can be used to measure $X$ and $Y$.
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.4\columnwidth}
+        \resizebox*{0.7\textwidth}{!}{
+            \begin{quantikz}
+                \qw & \gate{H} & \meter{} & \cw 
+            \end{quantikz}
+        }
+        \caption{$X$ measurement}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.4\columnwidth}
+        \resizebox*{\textwidth}{!}{
+            \begin{quantikz}
+                \qw & \gate{S^\dagger} & \gate{H} & \meter{} & \cw 
+            \end{quantikz}
+        }
+        \caption{$Y$ measurement}
+    \end{subfigure}
+    \caption{Circuits to measure $X$ and $Y$ for a qubit.}
+\end{figure}
+
+\begin{equation}
+    S^\dagger = \begin{pmatrix}
+        1 & 0 \\ 
+        0 & -i
+    \end{pmatrix}
+\end{equation}
+
+For a particular observable, say $X$, we can approximate the corresponding Bloch vector coordinate as 
+\begin{equation}
+    \bar{x} = \frac{N_0 - N_1}{N},
+\end{equation}
+where $N_0$ is the number of times we note the measurement outcome 0 and $N_1$ the number of times we note 
+the measurement outcome 1.
+
 \subsection{Fidelity Calculation}
+Through the process described in the previous subsection, we obtain a density matrix $\rho$ that approximates 
+the state of Bob's qubit at the end of the teleportation protocol. If Alice had initialized her qubit to the 
+pure state $\ket\psi$ at the beginning of the protocol, the fidelity between the $\ket\psi$ and $\rho$ is 
+\cite{nielsen-chuang}
+\begin{equation}
+    F(\ket\psi, \rho) = \sqrt{\bra\psi \rho \ket\psi}.
+\end{equation}
 \subsection{Results}
 
 \nocite{ibm-quantum}
