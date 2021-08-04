@@ -1,5 +1,5 @@
 # Testing the Fidelity of the Quantum Teleportation Protocol on an IBM Quantum Computer
-This is a repository for my final writeup for Physics 707 - Quantum Computing Lab, at University of 
+This is a repository for my final writeup for Physics 707 - Quantum Computing Lab, at University of
 Wisconsin-Madison as part of the MS Physics Quantum Computing Program (2020-2021).
 
 ## Problem Statement
