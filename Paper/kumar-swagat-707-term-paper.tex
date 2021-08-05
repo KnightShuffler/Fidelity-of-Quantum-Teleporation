@@ -47,7 +47,7 @@ Alice and Bob each have one of two qubits that are in the Bell state
 $\ket{\Psi}_{AB} = \frac{1}{\sqrt2}(\ket0_A\ket0_B + \ket1_A\ket1_B)$.
 Alice also has another qubit in the state $\ket\psi = \alpha\ket0+\beta\ket1$, the teleportation protocol allows
 her to transfer or \textit{teleport} her state $\ket\psi$ to Bob's qubit by making a measurement on both of 
-her qubits. \cite{nielsen-chuang,Qiskit-Textbook} Doing so does not violate the no-cloning theorem as the state 
+her qubits \cite{nielsen-chuang,Qiskit-Textbook}. Doing so does not violate the no-cloning theorem as the state 
 of Alice's qubit is collapses after measurement. The protocol is described using the quantum circuit in 
 Figure \ref{fig:teleportation-circuit}.
 
@@ -139,7 +139,7 @@ Figure \ref{fig:teleportation-circuit}.
 \subsection{Principle of Deferred Measurement}
 The principle of deferred measurement states that measurements made in the middle of a quantum circuit can 
 always be shifted to the end of the circuit, where any classically controlled gates dependent on those 
-measurements are replaced by conditional quantum gates. \cite{nielsen-chuang}
+measurements are replaced by conditional quantum gates \cite{nielsen-chuang}.
 
 \begin{figure}[H]
     \centering
@@ -212,14 +212,14 @@ where $X, Y$ and $Z$ are the Pauli matrices and
 \end{equation}
 are the average values of the observables $X,Y$ and $Z$ respectively \cite{nielsen-chuang}.
 $\vec{r} = (\bar{x},\bar{y},\bar{z})$ is called the Bloch vector of $\rho$. 
-$\|\vec{r}\| \leq 1$, with equality holding only for pure states \cite{nielsen-chuang}.
+%$\|\vec{r}\| \leq 1$, with equality holding only for pure states \cite{nielsen-chuang}.
 
 We can find an approximation of the Bloch vector for a state $\rho$ by instantiating $3N$ qubits in the state 
 $\rho$, measuring the observables $X, Y$ and $Z$ on $N$ instances each, and then taking the mean value of the 
 observations. We can use this procedure to tomographically reconstruct the state of Bob's qubit after the 
-teleportation protocol is finished.
+teleportation protocol is finished \cite{tomography}.
 
-IBM's hardware only allows the measurement of $Z$, with measurement outcome 0 denoting the eigenvalue $+1$ 
+IBM's hardware only allows the measurement of $Z$, with the measured bit 0 denoting the eigenvalue $+1$ 
 and 1 denoting the eigenvalue $-1$. The following circuits can be used to measure $X$ and $Y$.
 \begin{figure}[h]
     \centering
@@ -253,13 +253,14 @@ For a particular observable, say $X$, we can approximate the corresponding Bloch
 \begin{equation}
     \bar{x} = \frac{N_0 - N_1}{N},
 \end{equation}
-where $N_0$ is the number of times we note the measurement outcome 0 and $N_1$ the number of times we note 
-the measurement outcome 1.
+where $N_j$ is the number of times we note the measured bit to be $j$ and $N$ is the total number measurements 
+made for the observable.
 
 \subsection{Fidelity Calculation}
 Through the process described in the previous subsection, we obtain a density matrix $\rho$ that approximates 
-the state of Bob's qubit at the end of the teleportation protocol. If Alice had initialized her qubit to the 
-pure state $\ket\psi$ at the beginning of the protocol, the fidelity between the $\ket\psi$ and $\rho$ is 
+the state of Bob's qubit at the end of the teleportation protocol. 
+%If Alice had initialized her qubit to the pure state $\ket\psi$ at the beginning of the protocol, 
+The fidelity between Alice's initial qubit state $\ket\psi$ and Bob's final qubit state $\rho$ is 
 \cite{nielsen-chuang}
 \begin{equation}
     F(\ket\psi, \rho) = \sqrt{\bra\psi \rho \ket\psi}.
@@ -267,7 +268,7 @@ pure state $\ket\psi$ at the beginning of the protocol, the fidelity between the
 \end{equation}
 
 \subsection{Results}
-I decided to run my circuits on the \textit{ibmq\_5\_yorktown} system which has 5 qubits as shown in 
+I decided to run my circuits on the \textit{ibmq\_5\_yorktown} system which has 5 qubits as shown in Figure
 \ref{fig:qubit-layout}. The basis gates of the system are $I, R_z, \sqrt{X}, X, \CNOT$ and Reset to $\ket0$.
 \begin{figure}
     \centering
@@ -278,16 +279,17 @@ I decided to run my circuits on the \textit{ibmq\_5\_yorktown} system which has 
 \end{figure}
 
 This system offers two optimization levels for transpiling a circuit to run on the system -- level 0 where 
-the gates of the source circuit are directly converted to the system's basis gates and level 1 where the 
-level 0 circuit is optimized for a lower gate count. The transpiled circuit for the emulated teleportation
-protocol, shown in Figure \ref{fig:transpiled-circuits}, is independent of the optimization level, but the
-circuit to initialize an arbitrary state and the $Y$ measurement circuits have a reduced gate count when 
-transpiled at optimization level 1.
+the gates of the source circuit are directly converted to a sequence of the system's basis gates and level 1 
+where the level 0 circuit is optimized for a lower gate count. The transpiled circuit for the emulated 
+teleportation protocol, shown in Figure \ref{fig:transpiled-circuits}, is independent of the optimization 
+level, but the circuit to initialize an arbitrary state and the $Y$ measurement circuits have a reduced gate 
+count when transpiled at optimization level 1.
 
 \begin{figure*}
     \centering
     \includegraphics[width=\textwidth]{images/teleport_circ_opt_0.png}
-    \caption{The transpiled circuit for the emulated quantum teleportation protocol.}
+    \caption{The transpiled circuit for the emulated quantum teleportation protocol, image produced by Qiskit's
+    circuit drawing method.}
     \label{fig:transpiled-circuits}
 \end{figure*}
 
