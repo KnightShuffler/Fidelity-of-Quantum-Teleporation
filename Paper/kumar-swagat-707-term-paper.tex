@@ -263,8 +263,45 @@ pure state $\ket\psi$ at the beginning of the protocol, the fidelity between the
 \cite{nielsen-chuang}
 \begin{equation}
     F(\ket\psi, \rho) = \sqrt{\bra\psi \rho \ket\psi}.
+    \label{eq:fidelity}
 \end{equation}
+
 \subsection{Results}
+I decided to run my circuits on the \textit{ibmq\_5\_yorktown} system which has 5 qubits as shown in 
+\ref{fig:qubit-layout}. The basis gates of the system are $I, R_z, \sqrt{X}, X, \CNOT$ and Reset to $\ket0$.
+\begin{figure}
+    \centering
+    \includegraphics{images/qubit-architecture.png}
+    \caption{Layout of the 5 qubits of the \textit{ibmq\_5\_yorktown} system. The vertices represent the qubits 
+    and an edge between the qubits means that a physical CNOT gate can be implemented on the connected qubits.}
+    \label{fig:qubit-layout}
+\end{figure}
+
+This system offers two optimization levels for transpiling a circuit to run on the system -- level 0 where 
+the gates of the source circuit are directly converted to the system's basis gates and level 1 where the 
+level 0 circuit is optimized for a lower gate count. The transpiled circuit for the emulated teleportation
+protocol, shown in Figure \ref{fig:transpiled-circuits}, is independent of the optimization level, but the
+circuit to initialize an arbitrary state and the $Y$ measurement circuits have a reduced gate count when 
+transpiled at optimization level 1.
+
+\begin{figure*}
+    \centering
+    \includegraphics[width=\textwidth]{images/teleport_circ_opt_0.png}
+    \caption{The transpiled circuit for the emulated quantum teleportation protocol.}
+    \label{fig:transpiled-circuits}
+\end{figure*}
+
+For the experiment, I generated 50 random single-qubit states to run the teleportation protocol on. For each 
+state, I made $N = 1000$ $X, Y$ and $Z$ measurements each to tomographically reconstruct Bob's state at the 
+end of the protocol and calculate the fidelity as per Equation \ref{eq:fidelity}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{images/fidelity-vs-optimization-bar.png}
+    \caption{Average fidelities of the teleportation protocol at the two optimization levels.}
+\end{figure}
+
+At optimization level 0, the mean fidelity of the protocol was 86.84\% and at optimization level 1, the 
+mean fidelity of the protocol was 90.59\%.
 
 \nocite{ibm-quantum}
 
